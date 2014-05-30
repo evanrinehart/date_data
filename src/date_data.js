@@ -132,6 +132,9 @@ var DateData = {};
       return 0;
     };
 
+    this.next = function(){ return this.add(1); };
+    this.prev = function(){ return this.add(-1); };
+
     if(month == 2 && is_leap(year)) this.day_count = 29;
     else this.day_count = nominal_days_in_month[month];
 
@@ -241,6 +244,9 @@ var DateData = {};
     this.encode = function(){
       return this.year + '-' + pad(this.month) + '-' + pad(this.day);
     };
+
+    this.next = function(){ return this.add(1); }
+    this.prev = function(){ return this.add(-1); }
 
     this.atMidnight = function(){
       return new LocalTime(this, 0, 0, 0);

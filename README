@@ -26,8 +26,10 @@ operations
   eq, neq           : Day, Day -> Bool
   atMidnight        : Day -> LocalTime
   atTime            : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
-  toMonth           : Day -> Mont
+  toMonth           : Day -> Month
   encode            : Day -> String
+  next              : Day -> Day
+  prev              : Day -> Day
 
 LocalTime
   new               : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
@@ -75,6 +77,8 @@ operations
   onDayClamp      : Month, Integer 1..31 -> Day
   onDayRollover   : Month, Integer 1..31 -> Day
   encode          : Month -> String
+  next            : Month -> Month
+  prev            : Month -> Month
 
 Weekday
   decode : Integer 0..6 -> Weekday
