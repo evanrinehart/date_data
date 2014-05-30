@@ -26,11 +26,9 @@ Day
 
 LocalTime
   new               : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
-  day               : LocalTime -> Date
+  day               : LocalTime -> Day
+  onDay             : LocalTime, Day -> LocalTime
   diff              : LocalTime, LocalTime -> Number
-  compare           : LocalTime, LocalTime -> -1|0|1
-  lt,gt,lte,gte     : LocalTime, LocalTime -> Bool
-  eq, neq           : LocalTime, LocalTime -> Bool
   addSeconds        : LocalTime, Number -> LocalTime
   addMinutes        : LocalTime, Integer -> LocalTime
   addHours          : LocalTime, Integer -> LocalTime
@@ -38,7 +36,9 @@ LocalTime
   addMonthsClamp    : LocalTime, Integer -> LocalTime
   addMonthsRollover : LocalTime, Integer -> LocalTime
   addYears          : LocalTime, Integer -> LocalTime
-  onDay             : LocalTime, Day -> LocalTime
+  compare           : LocalTime, LocalTime -> -1|0|1
+  lt,gt,lte,gte     : LocalTime, LocalTime -> Bool
+  eq, neq           : LocalTime, LocalTime -> Bool
   unixTime          : LocalTime -> Number
   fromUnixTime      : Number -> LocalTime
   encode            : LocalTime -> String

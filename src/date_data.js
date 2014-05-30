@@ -81,6 +81,17 @@ var DateData = {};
     return [y,m,d];
   };
 
+  function decode_time(str){ 
+    if(!str.match(/^\d+:\d+:\d+(\.\d+)?$/))
+      throw new Error("can't decode time "+str);
+    var hms = str.split(':');
+    var h = parseInt(ymd[0],10);
+    var m = parseInt(ymd[1],10);
+    var s = parseFloat(ymd[2],10);
+    if(s < 0 || s > billion) throw new Error("seconds out of range");
+    return [h,m,s];
+  };
+
 
   var Month = function(year, month){
     if(year < -billion || year > billion) throw new Error("year out of range");
@@ -350,6 +361,17 @@ var DateData = {};
 
   LocalTime.fromUnixTime = function(timestamp){
     return UnixEpoch.add(timestamp);
+  };
+
+  LocalTime.decode = function(str){
+    if(!str.match(/^-?\d+-\d+-\d+ \d+:\d+:\d+(\.\d+)?$/)){
+      throw new Error("can't decode localtime "+str);
+    }
+
+    var datetime = str.split(' ');
+    var ymd = decode_date(datetime[0]);
+    var hms = decode_time(datetime[1]);
+    return new Day(ymd[0],ymd[1],ymd[2]).atTime(hms[0], hms[1], hms[2]);
   };
 
   /* end LocalTime */
