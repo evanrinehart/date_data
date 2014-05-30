@@ -1,0 +1,61 @@
+Date data
+
+Month
+  new : Integer, Integer 1..12 -> Month
+  month : Month -> Integer 1..12
+  year : Month -> Integer
+  diff : Month, Month -> Integer
+  add : Month, Integer -> Month
+  on_day : Month, Integer 1..28 -> Month
+  on_day_clamp : Month, Integer 1..31 -> Month
+  on_day_rollover: Month, Integer 1..31 -> Month
+  from_date: Date -> Month
+  encode : Month -> String
+  decode : String -> Month
+  day_count : Month -> Integer
+  toString : Month -> String
+
+Weekday
+  name : Weekday -> String
+  encode : Weekday -> Integer 0..6
+  decode : Integer 0..6 -> Weekday
+  
+Day
+  new : Integer, Integer 1..12, Integer 1..31 -> Day
+  year : Day -> Integer
+  month : Day -> Integer 1..12
+  day : Day -> Integer 1..31
+  day_of_week : Day -> Integer 0..6
+  diff : Day, Day -> Integer
+  add : Day, Integer -> Day
+  encode : Day -> String
+  decode : String -> Day
+  jd : Day -> Integer
+  mjd : Day -> Integer
+  format : Day, String -> String
+
+LocalTime
+  new : Date, Integer, Integer, Number -> LocalTime 
+  date : LocalTime -> Date
+  diff : LocalTime, LocalTime -> Number
+  add_seconds : TimeOfDay, Number -> LocalTime
+  add_minutes : TimeOfDay, Integer -> LocalTime
+  add_hours : TimeOfDay, Integer -> LocalTime
+  add_days : TimeOfDay, Integer -> LocalTime
+  add_months : TimeOfDay, Integer -> LocalTime
+  add_years : TimeOfDay, Integer -> LocalTime
+  timestamp : LocalTime -> Number
+  encode : LocalTime -> String
+  decode : LocalTime -> String
+  format : LocalTime, String -> String
+
+Constants
+  UnixEpoch : LocalTime
+  JulianEpoch : LocalTime
+  Sunday, Monday, ... : Weekday
+
+Commands
+  getCurrentUTCTime :: LocalTime
+  getCurrentLocalTime :: LocalTime
+  getCurrentLocalDate :: Day
+
