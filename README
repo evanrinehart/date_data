@@ -1,14 +1,21 @@
 Date data
 
+
+
 Examples
 ...
 
 Day
   new               : Integer, Integer 1..12, Integer 1..day_count -> Day
-  year              : Day -> Integer
-  month             : Day -> Integer 1..12
-  day               : Day -> Integer 1..day_count
-  dayOfWeek         : Day -> Integer 0..6
+  decode            : String -> Day
+properties
+  year              : Integer
+  month             : Integer 1..12
+  day               : Integer 1..day_count
+  dayOfWeek         : Integer 0..6
+  jd                : Integer
+  mjd               : Integer
+operations
   diff              : Day, Day -> Integer
   add               : Day, Integer -> Day
   addMonthsClamp    : Day, Integer -> Day
@@ -17,16 +24,23 @@ Day
   compare           : Day, Day -> -1|0|1
   lt,gt,lte,gte     : Day, Day -> Bool
   eq, neq           : Day, Day -> Bool
-  encode            : Day -> String
-  decode            : String -> Day
-  jd                : Day -> Integer
-  mjd               : Day -> Integer
   atMidnight        : Day -> LocalTime
   atTime            : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
+  toMonth           : Day -> Mont
+  encode            : Day -> String
 
 LocalTime
   new               : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
-  day               : LocalTime -> Day
+  fromUnixTime      : Number -> LocalTime
+  decode            : String -> LocalTime
+properties
+  day               : Day
+  hour              : Number 0..23
+  minute            : Number 0..59
+  second            : Number 0..
+  mjd               : Number
+  unixTime          : Number
+operations
   onDay             : LocalTime, Day -> LocalTime
   diff              : LocalTime, LocalTime -> Number
   addSeconds        : LocalTime, Number -> LocalTime
@@ -39,15 +53,17 @@ LocalTime
   compare           : LocalTime, LocalTime -> -1|0|1
   lt,gt,lte,gte     : LocalTime, LocalTime -> Bool
   eq, neq           : LocalTime, LocalTime -> Bool
-  unixTime          : LocalTime -> Number
-  fromUnixTime      : Number -> LocalTime
   encode            : LocalTime -> String
-  decode            : String -> LocalTime
 
 Month
   new             : Integer, Integer 1..12 -> Month
-  month           : Month -> Integer 1..12
-  year            : Month -> Integer
+  fromDay         : Day -> Month
+  decode          : String -> Month
+properties
+  month           : Integer 1..12
+  year            : Integer
+  dayCount        : Integer
+operations
   diff            : Month, Month -> Integer
   add             : Month, Integer -> Month
   compare         : Month, Month -> -1|0|1
@@ -58,15 +74,16 @@ Month
   onDay           : Month, Integer 1..28 -> Day
   onDayClamp      : Month, Integer 1..31 -> Day
   onDayRollover   : Month, Integer 1..31 -> Day
-  fromDay         : Day -> Month
-  dayCount        : Month -> Integer
   encode          : Month -> String
-  decode          : String -> Month
 
 Weekday
-  name   : Weekday -> String
-  encode : Weekday -> Integer 0..6
   decode : Integer 0..6 -> Weekday
+properties
+  name   : Weekday -> String
+operations
+  encode : Weekday -> Integer 0..6
+  next : Weekday -> Weekday
+  prev : Weekday -> Weekday
 
 Constants
   UnixEpoch           : LocalTime

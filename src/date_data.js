@@ -172,10 +172,11 @@ var DateData = {};
       }
     };
 
-    this.encode = n;
+    this.encode = function(){ return n };
     this.name = toString(n);
-    this.toString = toString;
-    this.eq = function(arg){ return this.encode == arg.encode; }
+    this.eq = function(arg){ return this.encode() == arg.encode(); }
+    this.next = function(){ return new Weekday((n+1)%7); }
+    this.prev = function(){ return new Weekday(mod(n-1,7)); }
   };
 
   var Day = function(y, m, d){
@@ -187,6 +188,8 @@ var DateData = {};
     this.year = y;
     this.month = m;
     this.day = d;
+
+    this.toMonth = function(){ return new Month(y,m); };
 
     this.jd = gregorian_to_jd(y,m,d);
     this.mjd = this.jd - 2400001;
@@ -235,7 +238,9 @@ var DateData = {};
     this.eq  = function(arg){ return this.diff(arg) == 0; };
     this.neq = function(arg){ return this.diff(arg) != 0; };
 
-    this.encode = this.year + '-' + pad(this.month) + '-' + pad(this.day);
+    this.encode = function(){
+      return this.year + '-' + pad(this.month) + '-' + pad(this.day);
+    };
 
     this.atMidnight = function(){
       return new LocalTime(this, 0, 0, 0);
@@ -349,11 +354,13 @@ var DateData = {};
       return d1 - d2;
     };
 
-    this.encode = this.day.encode + ' ' + [
-      pad(this.hour),
-      pad(this.minute),
-      pad(this.second)
-    ].join(':');
+    this.encode = function(){
+      return this.day.encode() + ' ' + [
+        pad(this.hour),
+        pad(this.minute),
+        pad(this.second)
+      ].join(':');
+    };
 
     this.mjd = this.day.mjd + this.seconds_past_midnight/86400;
 
@@ -376,7 +383,11 @@ var DateData = {};
 
   /* end LocalTime */
 
-  UnixEpoch = new LocalTime(new Day(1970, 1, 1), 0, 0, 0);
+  /* var is established above */
+  UnixEpoch = new Day(1970, 1, 1).atMidnight();
+
+  /* 4714 BC is -4713 in proleptic year numbers */
+  var JulianEpoch = new Day(-4713, 11, 24).atTime(12, 0, 0);
 
   /* these values are arbitrary */
   var month_origin = new Month(1890, 1);
@@ -396,7 +407,7 @@ var DateData = {};
     Thursday: new Weekday(4),
     Friday: new Weekday(5),
     Saturday: new Weekday(6),
-    JulianEpoch: new LocalTime(new Day(-4713, 11, 24), 12, 0, 0),
+    JulianEpoch: JulianEpoch,
     UnixEpoch: UnixEpoch,
 
     getCurrentUTCTime: function(){
