@@ -2,6 +2,19 @@ var DateData = {};
 
 (function(){
 
+  var billion = 1000000000;
+  var month_origin;
+  var time_origin;
+
+  var UnixEpoch;
+  var JulianEpoch;
+
+  var Month;
+  var Weekday;
+  var Day;
+  var LocalTime;
+
+
   function gregorian_to_jd(y, m, d){
     var f = m <= 2 ? -1 : 0;
     return (
@@ -33,21 +46,6 @@ var DateData = {};
     return true;
   }
 
-  var nominal_days_in_month = {
-    1: 31,
-    2: 28,
-    3: 31,
-    4: 30,
-    5: 31,
-    6: 30,
-    7: 31,
-    8: 30,
-    9: 30,
-    10: 31,
-    11: 30,
-    12: 31,
-  };
-
   function raw_diff_days(y2, m2, d2, y1, m1, d1){
     var j2 = gregorian_to_jd(y2,m2,d2);
     var j1 = gregorian_to_jd(y1,m1,d1);
@@ -63,8 +61,6 @@ var DateData = {};
     return a - Math.floor(a / b)*b;
   }
 
-  var billion = 1000000000;
-  var UnixEpoch;
 
   function decode_date(str){ 
     if(!str.match(/^-?\d+-\d+-\d+$/)) throw new Error("can't decode date "+str);
@@ -93,7 +89,7 @@ var DateData = {};
   };
 
 
-  var Month = function(year, month){
+  Month = function(year, month){
     if(year < -billion || year > billion) throw new Error("year out of range");
     if(month < 1 || month > 12) throw new Error("month out of range");
     this.year = year;
@@ -134,8 +130,6 @@ var DateData = {};
     this.next = function(){ return this.add(1); };
     this.prev = function(){ return this.add(-1); };
 
-    if(month == 2 && is_leap(year)) this.day_count = 29;
-    else this.day_count = nominal_days_in_month[month];
 
     this.onDay = function(d){
       return new Day(this.year, this.month, d);
@@ -146,8 +140,14 @@ var DateData = {};
     };
 
     this.lastDay = function(){
-      return new Day(this.year, this.month, this.dayCount);
+      return new Day(this.year, this.month, this.dayCount());
     };
+
+    this.dayCount = new Day(
+      this.year+Math.floor((this.month+1)/12),
+      ((this.month-1)+1)%12+1,
+      1
+    ).add(-1).day;
 
   };
 
@@ -162,7 +162,7 @@ var DateData = {};
 
   /* end Month */
 
-  var Weekday = function(n){
+  Weekday = function(n){
     if(n < 0 || n > 6) throw new Error("argument out of range");
 
     var toString = function(n){
@@ -185,10 +185,10 @@ var DateData = {};
     this.prev = function(){ return new Weekday(mod(n-1,7)); }
   };
 
-  var Day = function(y, m, d){
+  Day = function(y, m, d){
     if(y < -billion || y > billion) throw new Error("year out of range");
     if(m < 1 || m > 12) throw new Error("month out of range");
-    var day_count = new Month(y, m).day_count;
+    var day_count = new Month(y, m).dayCount();
     if(d < 1 || d > day_count) throw new Error("day out of range");
     
     this.year = y;
@@ -268,7 +268,7 @@ var DateData = {};
   /* end of Day */
 
 
-  var LocalTime = function(day, hour, minute, second){
+  LocalTime = function(day, hour, minute, second){
     if(hour < 0 || hour > 23) throw new Error("argument out of range");
     if(minute < 0 || hour > 59) throw new Error("argument out of range");
     if(second < 0) throw new Error("argument out of range");
@@ -388,19 +388,17 @@ var DateData = {};
 
   /* end LocalTime */
 
-  var time_origin = { // arbitrary dummy bootstrap time for diffs
+  time_origin = { // arbitrary dummy bootstrap time for diffs
     day: new Day(1984, 12, 5),
     seconds_past_midnight: 0
   };
-
-  /* var is established above */
-  UnixEpoch = new Day(1970, 1, 1).atMidnight();
+  month_origin = new Month(1890, 1); // arbitrary value
 
   /* 4714 BC is -4713 in proleptic year numbers */
-  var JulianEpoch = new Day(-4713, 11, 24).atTime(12, 0, 0);
+  JulianEpoch = new Day(-4713, 11, 24).atTime(12, 0, 0);
+  UnixEpoch = new Day(1970, 1, 1).atMidnight();
 
-  /* these values are arbitrary */
-  var month_origin = new Month(1890, 1);
+
 
   /* exported */
   DateData = {
