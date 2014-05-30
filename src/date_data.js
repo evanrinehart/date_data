@@ -101,8 +101,7 @@ var DateData = {};
 
     function diff_origin(m){
       var o = origin_month;
-      if(o.lt(m)) return (m.year - o.year)*12 + (m.month - o.month);
-      else return -((o.year - m.year)*12 + (o.month - m.month));
+      return (m.year - o.year)*12 + (m.month - o.month);
     }
 
     this.diff = function(arg){
@@ -137,6 +136,10 @@ var DateData = {};
 
     if(month == 2 && is_leap(year)) this.day_count = 29;
     else this.day_count = nominal_days_in_month[month];
+
+    this.onDay = function(d){
+      return new Day(this.year, this.month, d);
+    }
 
     this.firstDay = function(){
       return new Day(this.year, this.month, 1);
@@ -290,14 +293,8 @@ var DateData = {};
     function diff_origin(time){
       var t = normalize(time);
       var o = time_origin;
-      if(o.lt(t)){
-        return t.day.diff(o.day)*86400 +
+      return t.day.diff(o.day)*86400 +
           (t.seconds_past_midnight - o.seconds_past_midnight);
-      }
-      else{
-        return -(o.day.diff(t.day)*86400 +
-          (o.seconds_past_midnight - t.seconds_past_midnight));
-      }
     }
 
     this.compare = function(arg){
@@ -352,7 +349,9 @@ var DateData = {};
       return day.atTime(this.hour, this.minute, this.second);
     }
 
-    this.unixTime = this.diff(UnixEpoch);
+    this.unixTime = function(){
+      return this.diff(UnixEpoch);
+    }
 
     this.diff = function(arg){
       var d1 = diff_origin(this);
@@ -389,6 +388,11 @@ var DateData = {};
 
   /* end LocalTime */
 
+  var time_origin = { // arbitrary dummy bootstrap time for diffs
+    day: new Day(1984, 12, 5),
+    seconds_past_midnight: 0
+  };
+
   /* var is established above */
   UnixEpoch = new Day(1970, 1, 1).atMidnight();
 
@@ -397,7 +401,6 @@ var DateData = {};
 
   /* these values are arbitrary */
   var month_origin = new Month(1890, 1);
-  var time_origin = new LocalTime(new Day(1984, 12, 5), 0, 0, 0);
 
   /* exported */
   DateData = {
@@ -435,8 +438,8 @@ var DateData = {};
 })();
 
 
-//Day = DateData.Day;
-//Month = DateData.Month;
-//LocalTime = DateData.LocalTime;
-//Weekday = DateData.Weekday;
+Day = DateData.Day;
+Month = DateData.Month;
+LocalTime = DateData.LocalTime;
+Weekday = DateData.Weekday;
 
