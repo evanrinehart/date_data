@@ -63,6 +63,9 @@ var DateData = {};
     return a - Math.floor(a / b)*b;
   }
 
+  var billion = 1000000000;
+  var UnixEpoch;
+
   function decode_date(str){ 
     if(!str.match(/^-?\d+-\d+-\d+$/)) throw new Error("can't decode date "+str);
     var ymd = str.split('-');
@@ -74,14 +77,14 @@ var DateData = {};
     var y = mult * parseInt(ymd[0],10);
     var m = parseInt(ymd[1],10);
     var d = parseInt(ymd[2],10);
-    var billion = 1000000000;
     if(y < -billion || y > billion) throw new Error("year out of range");
     return [y,m,d];
   };
 
 
   var Month = function(year, month){
-    if(month < 1 || month > 12) throw new Error("argument out of range");
+    if(year < -billion || year > billion) throw new Error("year out of range");
+    if(month < 1 || month > 12) throw new Error("month out of range");
     this.year = year;
     this.month = month;
 
@@ -121,11 +124,23 @@ var DateData = {};
     if(month == 2 && is_leap(year)) this.day_count = 29;
     else this.day_count = nominal_days_in_month[month];
 
+    this.firstDay = function(){
+      return new Day(this.year, this.month, 1);
+    };
+
+    this.lastDay = function(){
+      return new Day(this.year, this.month, this.dayCount);
+    };
+
   };
 
   Month.decode = function(str){
     var ymd = decode_date(str);
     return new Month(ymd[0], ymd[1]);
+  };
+
+  Month.fromDay = function(d){
+    return new Month(d.year, d.month);
   };
 
   /* end Month */
@@ -153,9 +168,10 @@ var DateData = {};
   };
 
   var Day = function(y, m, d){
-    if(m < 1 || m > 12) throw new Error("argument out of range");
+    if(y < -billion || y > billion) throw new Error("year out of range");
+    if(m < 1 || m > 12) throw new Error("month out of range");
     var day_count = new Month(y, m).day_count;
-    if(d < 1 || d > day_count) throw new Error("argument out of range");
+    if(d < 1 || d > day_count) throw new Error("day out of range");
     
     this.year = y;
     this.month = m;
@@ -164,11 +180,27 @@ var DateData = {};
     this.jd = gregorian_to_jd(y,m,d);
     this.mjd = this.jd - 2400001;
 
-    this.day_of_week = new Weekday(mod(raw_diff_days(2014, 5, 25, y, m, d), 7));
+    this.dayOfWeek = new Weekday(mod(raw_diff_days(2014, 5, 25, y, m, d), 7));
 
     this.add = function(n){
       var ymd = jd_to_gregorian(this.jd + n);
       return new Day(ymd[0], ymd[1], ymd[2]);
+    };
+
+    this.addMonthsClamp = function(n){
+      var m1 = Month.from_date(this);
+      var m2 = m1.add(n);
+      return m2.on_day_clamp(this.day);
+    };
+
+    this.addMonthsRollover = function(n){
+      var m1 = Month.from_date(this);
+      var m2 = m1.add(n);
+      return m2.on_day_rollover(this.day);
+    };
+
+    this.addYears = function(n){
+      return new Day(this.year+n, this.month, this.day);
     };
 
     this.diff = function(arg){
@@ -176,6 +208,13 @@ var DateData = {};
         this.year, this.month, this.day,
         arg.year, arg.month, arg.day
       );
+    };
+
+    this.compare = function(arg){
+      var diff = this.diff(arg);
+      if(diff < 0) return -1;
+      if(diff > 0) return 1;
+      return 0;
     };
 
     this.lt  = function(arg){ return this.diff(arg) < 0; };
@@ -187,8 +226,12 @@ var DateData = {};
 
     this.encode = this.year + '-' + pad(this.month) + '-' + pad(this.day);
 
-    this.at_midnight = function(){
+    this.atMidnight = function(){
       return new LocalTime(this, 0, 0, 0);
+    };
+
+    this.atTime = function(h,m,s){
+      return new LocalTime(this, h, m, s);
     };
   };
 
@@ -257,7 +300,7 @@ var DateData = {};
     /* difference and translation ignore leapseconds by treating any time
     during a "leap second period" as existing on midnight of the next day */
 
-    this.add_seconds = function(dx){
+    this.addSeconds = function(dx){
       var t = normalize(this);
       var x0 = t.seconds_past_midnight;
       var xplus = x0 + dx;
@@ -270,8 +313,24 @@ var DateData = {};
       return new LocalTime(t.day.add(days), h2, m2, s2);
     };
 
-    this.add_minutes = function(mins){ return this.add_seconds(mins*60); };
-    this.add_hours = function(hours){ return this.add_seconds(hours*3600); };
+    this.addMinutes = function(mins){ return this.add_seconds(mins*60); };
+    this.addHours = function(hours){ return this.add_seconds(hours*3600); };
+    this.addDays = function(days){ return this.onDay(this.day.add(days)); };
+    this.addMonthsClamp = function(months){
+      return this.onDay(this.day.addMonthsClamp(n));
+    };
+    this.addMonthsRollover = function(months){
+      return this.onDay(this.day.addMonthsRollover(n));
+    };
+    this.addYears = function(years){
+      return this.onDay(this.day.addYears(years));
+    };
+
+    this.onDay = function(day){
+      return day.atTime(this.hour, this.minute, this.second);
+    }
+
+    this.unixTime = this.diff(UnixEpoch);
 
     this.diff = function(arg){
       var d1 = diff_origin(this);
@@ -287,7 +346,15 @@ var DateData = {};
 
     this.mjd = this.day.mjd + this.seconds_past_midnight/86400;
 
-  }
+  };
+
+  LocalTime.fromUnixTime = function(timestamp){
+    return UnixEpoch.add(timestamp);
+  };
+
+  /* end LocalTime */
+
+  UnixEpoch = new LocalTime(new Day(1970, 1, 1), 0, 0, 0);
 
   /* these values are arbitrary */
   var month_origin = new Month(1890, 1);
@@ -308,11 +375,22 @@ var DateData = {};
     Friday: new Weekday(5),
     Saturday: new Weekday(6),
     JulianEpoch: new LocalTime(new Day(-4713, 11, 24), 12, 0, 0),
-    UnixEpoch: new LocalTime(new Day(1970, 1, 1), 0, 0, 0),
+    UnixEpoch: UnixEpoch,
 
-    getCurrentUTCTime: function(){},
-    getCurrentLocalTime: function(){},
-    getCurrentLocalDate: function(){}
+    getCurrentUTCTime: function(){
+      return LocalTime.fromUnixTime(new Date().getTime()/1000);
+    },
+    getCurrentLocalTime: function(){
+      var d = new Date();
+      return new LocalTime(
+        new Day(d.getFullYear(), d.getMonth(), d.getDate()),
+        d.getHours(), d.getMinutes(), d.getSeconds()+d.getMilliseconds()/1000
+      );
+    },
+    getCurrentLocalDate: function(){
+      var d = new Date();
+      return new Day(d.getFullYear(), d.getMonth(), d.getDate());
+    }
   };
 
 })();

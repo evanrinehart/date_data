@@ -1,61 +1,80 @@
 Date data
 
-Month
-  new : Integer, Integer 1..12 -> Month
-  month : Month -> Integer 1..12
-  year : Month -> Integer
-  diff : Month, Month -> Integer
-  add : Month, Integer -> Month
-  on_day : Month, Integer 1..28 -> Month
-  on_day_clamp : Month, Integer 1..31 -> Month
-  on_day_rollover: Month, Integer 1..31 -> Month
-  from_date: Date -> Month
-  encode : Month -> String
-  decode : String -> Month
-  day_count : Month -> Integer
-  toString : Month -> String
+Examples
+...
 
-Weekday
-  name : Weekday -> String
-  encode : Weekday -> Integer 0..6
-  decode : Integer 0..6 -> Weekday
-  
 Day
-  new : Integer, Integer 1..12, Integer 1..31 -> Day
-  year : Day -> Integer
-  month : Day -> Integer 1..12
-  day : Day -> Integer 1..31
-  day_of_week : Day -> Integer 0..6
-  diff : Day, Day -> Integer
-  add : Day, Integer -> Day
-  encode : Day -> String
-  decode : String -> Day
-  jd : Day -> Integer
-  mjd : Day -> Integer
-  format : Day, String -> String
+  new               : Integer, Integer 1..12, Integer 1..day_count -> Day
+  year              : Day -> Integer
+  month             : Day -> Integer 1..12
+  day               : Day -> Integer 1..day_count
+  dayOfWeek         : Day -> Integer 0..6
+  diff              : Day, Day -> Integer
+  add               : Day, Integer -> Day
+  addMonthsClamp    : Day, Integer -> Day
+  addMonthsRollover : Day, Integer -> Day
+  addYears          : Day, Integer -> Day
+  compare           : Day, Day -> -1|0|1
+  lt,gt,lte,gte     : Day, Day -> Bool
+  eq, neq           : Day, Day -> Bool
+  encode            : Day -> String
+  decode            : String -> Day
+  jd                : Day -> Integer
+  mjd               : Day -> Integer
+  atMidnight        : Day -> LocalTime
+  atTime            : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
 
 LocalTime
-  new : Date, Integer, Integer, Number -> LocalTime 
-  date : LocalTime -> Date
-  diff : LocalTime, LocalTime -> Number
-  add_seconds : TimeOfDay, Number -> LocalTime
-  add_minutes : TimeOfDay, Integer -> LocalTime
-  add_hours : TimeOfDay, Integer -> LocalTime
-  add_days : TimeOfDay, Integer -> LocalTime
-  add_months : TimeOfDay, Integer -> LocalTime
-  add_years : TimeOfDay, Integer -> LocalTime
-  timestamp : LocalTime -> Number
-  encode : LocalTime -> String
-  decode : LocalTime -> String
-  format : LocalTime, String -> String
+  new               : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
+  day               : LocalTime -> Date
+  diff              : LocalTime, LocalTime -> Number
+  compare           : LocalTime, LocalTime -> -1|0|1
+  lt,gt,lte,gte     : LocalTime, LocalTime -> Bool
+  eq, neq           : LocalTime, LocalTime -> Bool
+  addSeconds        : LocalTime, Number -> LocalTime
+  addMinutes        : LocalTime, Integer -> LocalTime
+  addHours          : LocalTime, Integer -> LocalTime
+  addDays           : LocalTime, Integer -> LocalTime
+  addMonthsClamp    : LocalTime, Integer -> LocalTime
+  addMonthsRollover : LocalTime, Integer -> LocalTime
+  addYears          : LocalTime, Integer -> LocalTime
+  onDay             : LocalTime, Day -> LocalTime
+  unixTime          : LocalTime -> Number
+  fromUnixTime      : Number -> LocalTime
+  encode            : LocalTime -> String
+  decode            : String -> LocalTime
+
+Month
+  new             : Integer, Integer 1..12 -> Month
+  month           : Month -> Integer 1..12
+  year            : Month -> Integer
+  diff            : Month, Month -> Integer
+  add             : Month, Integer -> Month
+  compare         : Month, Month -> -1|0|1
+  lt,gt,lte,gte   : Month, Month -> Bool
+  eq, neq         : Month, Month -> Bool
+  firstDay        : Month -> Day
+  lastDay         : Month -> Day
+  onDay           : Month, Integer 1..28 -> Day
+  onDayClamp      : Month, Integer 1..31 -> Day
+  onDayRollover   : Month, Integer 1..31 -> Day
+  fromDay         : Day -> Month
+  dayCount        : Month -> Integer
+  encode          : Month -> String
+  decode          : String -> Month
+
+Weekday
+  name   : Weekday -> String
+  encode : Weekday -> Integer 0..6
+  decode : Integer 0..6 -> Weekday
 
 Constants
-  UnixEpoch : LocalTime
-  JulianEpoch : LocalTime
+  UnixEpoch           : LocalTime
+  JulianEpoch         : LocalTime
   Sunday, Monday, ... : Weekday
 
 Commands
-  getCurrentUTCTime :: LocalTime
+  getCurrentUTCTime   :: LocalTime
   getCurrentLocalTime :: LocalTime
   getCurrentLocalDate :: Day
 
