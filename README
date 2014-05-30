@@ -41,7 +41,6 @@ properties
   minute            : Number 0..59
   second            : Number 0..
   mjd               : Number
-  unixTime          : Number
 operations
   onDay             : LocalTime, Day -> LocalTime
   diff              : LocalTime, LocalTime -> Number
@@ -55,6 +54,7 @@ operations
   compare           : LocalTime, LocalTime -> -1|0|1
   lt,gt,lte,gte     : LocalTime, LocalTime -> Bool
   eq, neq           : LocalTime, LocalTime -> Bool
+  unixTime          : LocalTime -> Number
   encode            : LocalTime -> String
 
 Month
