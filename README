@@ -1,26 +1,54 @@
 Date data
 
+Arithmetic with the proleptic gregorian calendar (Month, Day, Weekday).
+Arithmetic on local time-of-day values (LocalTime).
 
+The examples below assume you have exported all relevant classes and
+commands from the library as global variables.
 
 Examples
-...
+d1 = new Day(2014,5,1)    ==> 5/1/2014
+d2 = d1.add(37)           ==> 6/7/2014
+d1.lt(d2)                 ==> true
+d2.diff(d1)               ==> 37
+d1.dayOfWeek              ==> Wednesday
+d1.mjd                    ==> 56778
+d2.encode()               ==> "2014-06-07"
+Day.decode("2014-06-07")  ==> 6/7/2014
+d1.month                  ==> 5
+m1 = d1.toMonth()         ==> May 2014
+m2 = m1.add(3)            ==> August 2014
+m2.diff(m1)               ==> 3
+d3 = m2.onDay(15)         ==> 8/15/2014
+d3.atMidnight()           ==> 8/15/2014 00:00:00
+t1 = d3.atTime(15,0,0)    ==> 8/15/2014 15:00:00
+t2 = t1.addHours(4)       ==> 8/15/2014 19:00:00
+t2.diff(t1)               ==> 14400
+t2.unixTime               ==> 1398970800
+t2.day                    ==> 8/15/2014
+t2.mjd                    ==> 56884.791666666664
+t2.encode()               ==> "2014-08-15 19:00:00"
+Apocalypse38              ==> 1/19/2038 03:14:08
+getCurrentLocalTime       ~~> 6/01/2014 00:27:59.329
+
 
 Day
   new               : Integer, Integer 1..12, Integer 1..day_count -> Day
   decode            : String -> Day
+  fromMJD           : Integer -> Day
 properties
   year              : Integer
   month             : Integer 1..12
   day               : Integer 1..day_count
-  dayOfWeek         : Integer 0..6
-  jd                : Integer
+  dayOfWeek         : Weekday
   mjd               : Integer
 operations
   diff              : Day, Day -> Integer
   add               : Day, Integer -> Day
   addMonthsClamp    : Day, Integer -> Day
   addMonthsRollover : Day, Integer -> Day
-  addYears          : Day, Integer -> Day
+  addYearsClamp     : Day, Integer -> Day
+  addYearsRollover  : Day, Integer -> Day
   compare           : Day, Day -> -1|0|1
   lt,gt,lte,gte     : Day, Day -> Bool
   eq, neq           : Day, Day -> Bool
@@ -33,7 +61,7 @@ operations
 
 LocalTime
   new               : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
-  fromUnixTime      : Number -> LocalTime
+  fromUnixTime      : Number -> LocalTimeUTC
   decode            : String -> LocalTime
 properties
   day               : Day
@@ -50,11 +78,12 @@ operations
   addDays           : LocalTime, Integer -> LocalTime
   addMonthsClamp    : LocalTime, Integer -> LocalTime
   addMonthsRollover : LocalTime, Integer -> LocalTime
-  addYears          : LocalTime, Integer -> LocalTime
+  addYearsClamp     : LocalTime, Integer -> LocalTime
+  addYearsRollover  : LocalTime, Integer -> LocalTime
   compare           : LocalTime, LocalTime -> -1|0|1
   lt,gt,lte,gte     : LocalTime, LocalTime -> Bool
   eq, neq           : LocalTime, LocalTime -> Bool
-  unixTime          : LocalTime -> Number
+  unixTime          : LocalTimeUTC -> Number
   encode            : LocalTime -> String
 
 Month
@@ -92,6 +121,7 @@ operations
 Constants
   UnixEpoch           : LocalTime
   JulianEpoch         : LocalTime
+  Apocalypse38        : LocalTime
   Sunday, Monday, ... : Weekday
 
 Commands
@@ -99,3 +129,55 @@ Commands
   getCurrentLocalTime :: LocalTime
   getCurrentLocalDate :: Day
 
+Exceptions
+  * when decoding fails
+  * when js arithmetic on very large years would give the wrong result
+
+Notes
+
+I am currently missing, like the js library itself, something like strftime and
+strptime for more flexible interaction with string representations. 
+
+The operation "unixTime" for a LocalTime assumes that the argument represents
+UTC. There is currently no way for it to stop you from accidentally using it on
+a civil time that has some offset from UTC. A good way out of this is to
+introduce a "ZonedTime" which carries a time zone series tag so it can know how
+to get to UTC. This tag is not an offset, but an index into the "olsen files"
+which, when combined with the time, give an offset. Then, only ZonedTime
+can do the unixTime operation. LocalTime, simple and zoneless, cannot.
+This goes for modified julian date too.
+
+future
+
+TimeZone
+  new : String -> TimeZone
+  list : [TimeZone]
+properties
+  name : String
+  region : String
+  nominalOffset : Number
+  decodeUnixTime : ZonedTime
+
+LocalTime
+  asZone : LocalTime -> TimeZone -> ZonedTime
+  asUTC : LocalTime -> ZonedTime
+  (no unixTime)
+  (no mjd)
+
+ZonedTime
+properties
+  timeZone : TimeZone
+  localTime : LocalTime
+  offset : Number
+  mjd : Number
+operations
+  unixTime : ZonedTime -> Number
+  inZone : ZonedTime -> TimeZone -> ZonedTime
+  toUTC : ZonedTime -> ZonedTime
+  diff : ZonedTime -> ZonedTime -> Number
+  ... and all the other operations of LocalTime
+  ... diff, lt, eq etc compare their UTC local times
+  
+
+Commands
+  getCurrentZonedTime :: ZonedTime
