@@ -21,6 +21,8 @@ var DateData = {};
 
   var UTC; //TimeZone
 
+  var Sunday;
+
   var Month;
   var Weekday;
   var Day;
@@ -159,6 +161,10 @@ var DateData = {};
     else return String(n);
   }
 
+  function assert_type(arg, cl){
+    if(!(arg instanceof cl)) throw new TypeError("bad arg type");
+  }
+
 
   function decode_date(str){ 
     if(!str.match(/^-?\d+-\d+-\d+$/)) throw new Error("can't decode date "+str);
@@ -199,6 +205,7 @@ var DateData = {};
     }
 
     this.diff = function(arg){
+      assert_type(arg, Month);
       var d1 = diff_origin(m);
       var d2 = diff_origin(arg);
       return d1 - d2;
@@ -285,6 +292,7 @@ var DateData = {};
     this.encode = function(){ return n };
     this.name = toString(n);
     this.eq = function(arg){ return this.encode() == arg.encode(); }
+    this.neq = function(arg){ return this.encode() != arg.encode(); }
     this.next = function(){ return new Weekday((n+1)%7); }
     this.prev = function(){ return new Weekday(mod(n-1,7)); }
   };
@@ -338,6 +346,7 @@ var DateData = {};
     };
 
     this.diff = function(arg){
+      assert_type(arg, Day);
       return raw_diff_days(
         this.year, this.month, this.day,
         arg.year, arg.month, arg.day
@@ -372,6 +381,19 @@ var DateData = {};
     this.atTime = function(h,m,s){
       return new LocalTime(this, h, m, s);
     };
+
+    this.nextWeekday = function(weekday){
+      var d = this;
+      do{ d = d.next(); }while(d.dayOfWeek.neq(weekday));
+      return d;
+    };
+
+    this.prevWeekday = function(weekday){
+      var d = this;
+      do{ d = d.prev(); }while(d.dayOfWeek.neq(weekday));
+      return d;
+    };
+
   };
 
   Day.decode = function(str){
@@ -443,7 +465,7 @@ var DateData = {};
       var x0 = t.seconds_past_midnight;
       var xplus = x0 + dx;
       var x1 = mod(xplus, 86400);
-      var days = Math.floor(xplus / 86400);
+
       var h2 = Math.floor(x1 / 3600);
       var rem1 = mod(x1, 3600);
       var m2 = Math.floor(rem1 / 60);
@@ -476,6 +498,7 @@ var DateData = {};
     }
 
     this.diff = function(arg){
+      assert_type(arg, LocalTime);
       var d1 = diff_origin(this);
       var d2 = diff_origin(arg);
       return d1 - d2;
@@ -532,17 +555,17 @@ var DateData = {};
     };
 
     this.localToOffset = function(local){
+      return 0; //FIXME
       throw new Error([
         "invalid local time for this timezone: ",
         local.encode(),
         ' ',
         this.name
       ].join(''));
-      return 0; //FIXME
     };
 
     this.tryLocalToOffset = function(local){
-      return null;//FIXME
+      return 0;//FIXME
     };
 
     this.decode = function(str){
@@ -584,7 +607,7 @@ var DateData = {};
     };
 
     this.unixTime = function(){
-      return utcTime.diff(UnixEpoch);
+      return utcTime.diff(UnixEpoch.localTime);
     };
 
     this.compare = function(arg){
@@ -592,26 +615,45 @@ var DateData = {};
     };
 
     this.diff = function(arg){
+      assert_type(arg, ZonedTime);
       return utcTime.diff(arg.toUTC().localTime);
     };
 
-  };
+    this.encode = function(){
+      return utcTime.encode();
+    }
 
-  ZonedTime.prototype = LocalTime;
+    this.addSeconds = function(n){
+      return new ZonedTime(utcTime.addSeconds(n), timeZone, offset);
+    }
+
+  };
 
   /* end ZonedTime */
 
 
   function easterAlgorithm(year){
-    return Apocalypse38.localTime.day;
+    /* ripped from hackage package time-1.4.2 */
+    var century = div(year,100) + 1;
+    var shiftedEpact = mod(
+      plus(
+        14,
+        11*mod(year,19),
+        -div(3*century, 4),
+        div(5 + 8 * century, 25)
+      ),
+      30
+    );
+    if(shiftedEpact==0 || ( shiftedEpact==1 && mod(year,19) < 10)){
+      var adjustedEpact = shiftedEpact+1;
+    }
+    else{
+      var adjustedEpact = shiftedEpact;
+    }
+    var base = new Day(year, 4, 19);
+    var paschalFullMoon = base.add(-adjustedEpact);
+    return paschalFullMoon.nextWeekday(Sunday);
   }
-
-
-  Year = {
-    isLeap: is_leap,
-    easter: easterAlgorithm
-  }
-
 
 
 
@@ -626,7 +668,7 @@ and list of transition pairs (utc time of transition, new offset)
 put data generate from tz database files here
 */
   var raw_tzdata = [
-    ['UTC', null, 'Etc/UTC', 0, 0, []],
+    ['UTC', null, 'UTC', 0, 0, []],
     ['US/Central', 'US', 'America/Chicago', -6, -6, []]
   ];
 
@@ -645,6 +687,8 @@ put data generate from tz database files here
   /* corresponding to unix time 2^31, not minus 1 */
   Apocalypse38 = new Day(2038,1,19).atTime(3,14,8).asUTC();
 
+  Sunday = new Weekday(0);
+
   /* exported */
   DateData = {
     Month: Month,
@@ -653,15 +697,18 @@ put data generate from tz database files here
     LocalTime: LocalTime,
     TimeZone: TimeZone,
     ZonedTime: ZonedTime,
-    Year: Year,
 
-    Sunday: new Weekday(0),
+    easter: easterAlgorithm,
+    isLeapYear: is_leap,
+
+    Sunday: Sunday,
     Monday: new Weekday(1),
     Tuesday: new Weekday(2),
     Wednesday: new Weekday(3),
     Thursday: new Weekday(4),
     Friday: new Weekday(5),
     Saturday: new Weekday(6),
+
     JulianEpoch: JulianEpoch,
     UnixEpoch: UnixEpoch,
     Apocalypse38: Apocalypse38,
@@ -695,4 +742,3 @@ Weekday = DateData.Weekday;
 TimeZone = DateData.TimeZone;
 ZonedTime = DateData.ZonedTime;
 UTCTime = DateData.UTCTime;
-Year = DateData.Year;
