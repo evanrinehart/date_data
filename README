@@ -1,7 +1,7 @@
 Date data
 
 Arithmetic with the proleptic gregorian calendar (Month, Day, Weekday).
-Arithmetic on local time-of-day values (LocalTime).
+Arithmetic on local, abstract time-of-day values (LocalTime).
 
 The examples below assume you have exported all relevant classes and
 commands from the library as global variables.
@@ -135,25 +135,43 @@ Exceptions
 
 Notes
 
-I am currently missing, like the js library itself, something like strftime and
-strptime for more flexible interaction with string representations. 
+The LocalTime data type is an abstract notion of time independent from any
+real points in time as measured by a clock. You can consider a LocalTime
+value as a point in UTC time if you take care not to mix it with one that
+doesn't. Only if you have a UTC time can you compute the unix timestamp
+correctly.
+
+The seconds field of a LocalTime is not only fractional, but can be 60 or
+more to represent time during a leap second. I didn't specify 61 as an
+upper bound in case two leap seconds happen at once. LocalTimes with
+seconds value 60 or more are considered to be the same as midnight of the
+next day for the purposes of difference and translations (addSeconds,
+addDays, etc). Note also that differences and translations never take into
+account leap seconds.
+
+I am currently missing, like the js library itself, something like strftime
+and strptime for more flexible interaction with string representations. 
 
 There are two kinds of MJD in use here. The mjd property of Day should be
-considered the modified julian day number, which is simply the count of days
-since 1858-11-17 which is 0. The mjd property of LocalTime is the more familiar
-modified julian date. This is the nominal time, measured in days, since
-midnight of 1858-11-17 UTC. Because of this precise meaning, using the mjd of a
-LocalTime that doesn't represent UTC is illegal. See the following plan to
-fix this.
+considered the modified julian day number, which is simply the count of
+days since 1858-11-17 which is 0. The mjd property of LocalTime is the more
+familiar modified julian date. This is the nominal time, measured in days,
+since midnight of 1858-11-17 UTC. Because of this precise meaning, using
+the mjd of a LocalTime that doesn't represent UTC is illegal. See the
+following plan to fix this.
 
-The operation "unixTime" for a LocalTime assumes that the argument represents
-UTC. There is currently no way for it to stop you from accidentally using it on
-a civil time that has some offset from UTC. A good way out of this is to
-introduce a "ZonedTime" which carries a time zone series tag so it can know how
-to get to UTC. This tag is not an offset, but an index into the "olsen files"
-which, when combined with the time, give an offset. Then, only ZonedTime
-can do the unixTime operation. LocalTime, simple and zoneless, cannot.
-This goes for modified julian date too.
+The operation "unixTime" for a LocalTime assumes that the argument
+represents UTC. There is currently no way for it to stop you from
+accidentally using it on a civil time that has some offset from UTC. A good
+way out of this is to introduce a "ZonedTime" which carries a time zone
+series tag so it can know how to get to UTC. This tag is not an offset, but
+an index into the "olsen files" which, when combined with the time, give an
+offset. Then, only ZonedTime can do the unixTime operation. LocalTime,
+simple and zoneless, cannot.  This goes for modified julian date too.
+
+* add formatting
+* add parsing
+* add zoned time to represent specific timestamps, including utc time
 
 future
 
