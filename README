@@ -60,14 +60,14 @@ operations
   prev              : Day -> Day
 
 LocalTime
-  new               : Day, Integer 0..23, Integer 0..59, Number 0.. -> LocalTime
+  new               : Day, Integer 0..23, Integer 0..59, Number [0,61) -> LocalTime
   fromUnixTime      : Number -> LocalTimeUTC
   decode            : String -> LocalTime
 properties
   day               : Day
-  hour              : Number 0..23
-  minute            : Number 0..59
-  second            : Number 0..
+  hour              : Integer 0..23
+  minute            : Integer 0..59
+  second            : Number [0,61)
   mjd               : Number
 operations
   onDay             : LocalTime, Day -> LocalTime
@@ -141,13 +141,11 @@ value as a point in UTC time if you take care not to mix it with one that
 doesn't. Only if you have a UTC time can you compute the unix timestamp
 correctly.
 
-The seconds field of a LocalTime is not only fractional, but can be 60 or
-more to represent time during a leap second. I didn't specify 61 as an
-upper bound in case two leap seconds happen at once. LocalTimes with
-seconds value 60 or more are considered to be the same as midnight of the
-next day for the purposes of difference and translations (addSeconds,
-addDays, etc). Note also that differences and translations never take into
-account leap seconds.
+The seconds field of a LocalTime is not only fractional, but can be greater
+than 60 to represent time during a leap second. LocalTimes with seconds value
+60 or more are considered to be the same as midnight of the next day for the
+purposes of difference and translations (addSeconds, addDays, etc). Note also
+that differences and translations never take into account leap seconds.
 
 I am currently missing, like the js library itself, something like strftime
 and strptime for more flexible interaction with string representations. 
