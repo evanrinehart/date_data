@@ -53,14 +53,16 @@ operations
   lt,gt,lte,gte     : Day, Day -> Bool
   eq, neq           : Day, Day -> Bool
   atMidnight        : Day -> LocalTime
-  atTime            : Day, Integer 0..23, Integer 0..59, Number [0,61) -> LocalTime
+  atTime            : Day, Integer 0..23, Integer 0..59, Number [0,61)
+                        -> LocalTime
   toMonth           : Day -> Month
   encode            : Day -> String
   next              : Day -> Day
   prev              : Day -> Day
 
 LocalTime
-  new               : Day, Integer 0..23, Integer 0..59, Number [0,61) -> LocalTime
+  new               : Day, Integer 0..23, Integer 0..59, Number [0,61)
+                        -> LocalTime
   fromUnixTime      : Number -> LocalTimeUTC
   decode            : String -> LocalTime
 properties
