@@ -151,12 +151,12 @@ I am currently missing, like the js library itself, something like strftime
 and strptime for more flexible interaction with string representations. 
 
 There are two kinds of MJD in use here. The mjd property of Day should be
-considered the modified julian day number, which is simply the count of
-days since 1858-11-17 which is 0. The mjd property of LocalTime is the more
+considered the modified julian day number, which is simply the count of days
+since 1858-11-17 which is day 0. The mjd property of LocalTime is the more
 familiar modified julian date. This is the nominal time, measured in days,
-since midnight of 1858-11-17 UTC. Because of this precise meaning, using
-the mjd of a LocalTime that doesn't represent UTC is illegal. See the
-following plan to fix this.
+since midnight of 1858-11-17 UTC. Because of this precise meaning, using the
+mjd of a LocalTime that doesn't represent UTC is illegal. See the following
+plan to fix this.
 
 The operation "unixTime" for a LocalTime assumes that the argument
 represents UTC. There is currently no way for it to stop you from
