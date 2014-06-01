@@ -63,14 +63,12 @@ operations
 LocalTime
   new               : Day, Integer 0..23, Integer 0..59, Number [0,61)
                         -> LocalTime
-  fromUnixTime      : Number -> LocalTimeUTC
   decode            : String -> LocalTime
 properties
   day               : Day
   hour              : Integer 0..23
   minute            : Integer 0..59
   second            : Number [0,61)
-  mjd               : Number
 operations
   onDay             : LocalTime, Day -> LocalTime
   diff              : LocalTime, LocalTime -> Number
@@ -85,8 +83,9 @@ operations
   compare           : LocalTime, LocalTime -> -1|0|1
   lt,gt,lte,gte     : LocalTime, LocalTime -> Bool
   eq, neq           : LocalTime, LocalTime -> Bool
-  unixTime          : LocalTimeUTC -> Number
   encode            : LocalTime -> String
+  asUTC             : LocalTime -> UTCTime
+  asZone            : LocalTime -> (z:TimeZone) -> ZonedTime z
 
 Month
   new             : Integer, Integer 1..12 -> Month
@@ -120,91 +119,84 @@ operations
   next : Weekday -> Weekday
   prev : Weekday -> Weekday
 
+Year
+  isLeap : Integer -> Bool
+  easter : Integer -> Day
+
+ZonedTime
+properties
+  timeZone      : TimeZone
+  localTime     : LocalTime
+  offset        : Number
+  mjd           : Number
+operations
+  unixTime      : ZonedTime z -> Number
+  inZone        : ZonedTime z -> (y:TimeZone) -> ZonedTime y
+  toUTC         : ZonedTime z -> UTCTime
+  diff          : ZonedTime z -> ZonedTime y -> Number
+  lt,lte,gt,gte : ZonedTime z -> ZonedTime y -> Bool
+  eq,neq        : ZonedTime z -> ZonedTime y -> Bool
+  encode        : ZonedTime z -> String
+
+TimeZone
+  byName         : String -> TimeZone | Null
+  byRegion       : String -> [TimeZone]
+  all            : [TimeZone]
+properties
+  name           : String
+  region         : String
+  tzInfoName     : String
+  nominalOffset  : [Integer -12..12, Integer 0..59]
+operations
+  decode         : Timezone -> String -> ZonedTime
+  decodeUnixTime : Timezone -> Number -> ZonedTime
+
+UTCTime = ZonedTime UTC
+
+
+
 Constants
-  UnixEpoch           : LocalTime
-  JulianEpoch         : LocalTime
-  Apocalypse38        : LocalTime
+  UnixEpoch           : UTCTime
+  JulianEpoch         : UTCTime
+  Apocalypse38        : UTCTime
   Sunday, Monday, ... : Weekday
 
 Commands
-  getCurrentUTCTime   :: LocalTime
+  getCurrentUTCTime   :: UTCTime
   getCurrentLocalTime :: LocalTime
+  getCurrentZonedTime :: ZonedTime
   getCurrentLocalDate :: Day
 
 Exceptions
   * when decoding fails
   * when js arithmetic on very large years would give the wrong result
+  * not every product of valid LocalTime and valid TimeZone is valid
 
 Notes
 
 The LocalTime data type is an abstract notion of time independent from any
-real points in time as measured by a clock. You can consider a LocalTime
-value as a point in UTC time if you take care not to mix it with one that
-doesn't. Only if you have a UTC time can you compute the unix timestamp
-correctly.
+standard of timekeeping. Imagine this as simply representing configurations
+of a calendar and a clock on the wall. Use UTCTime or ZonedTime to work
+with standard historical moments in time, though you might not need to.
 
 The seconds field of a LocalTime is not only fractional, but can be greater
 than 60 to represent time during a leap second. LocalTimes with seconds value
 60 or more are considered to be the same as midnight of the next day for the
 purposes of difference and translations (addSeconds, addDays, etc). Note also
 that differences and translations never take into account leap seconds.
+LocalTime and UTCTime are intended to be only an approximation of some linear
+physical timescale.
 
 I am currently missing, like the js library itself, something like strftime
 and strptime for more flexible interaction with string representations. 
 
 There are two kinds of MJD in use here. The mjd property of Day should be
 considered the modified julian day number, which is simply the count of days
-since 1858-11-17 which is day 0. The mjd property of LocalTime is the more
-familiar modified julian date. This is the nominal time, measured in days,
-since midnight of 1858-11-17 UTC. Because of this precise meaning, using the
-mjd of a LocalTime that doesn't represent UTC is illegal. See the following
-plan to fix this.
+since 1858-11-17 (gregorian) which is day 0. The mjd property of ZonedTime is
+the more familiar modified julian date. This is the nominal time, measured in
+days, since midnight of 1858-11-17 UTC.
 
-The operation "unixTime" for a LocalTime assumes that the argument
-represents UTC. There is currently no way for it to stop you from
-accidentally using it on a civil time that has some offset from UTC. A good
-way out of this is to introduce a "ZonedTime" which carries a time zone
-series tag so it can know how to get to UTC. This tag is not an offset, but
-an index into the "olson files" which, when combined with the time, give an
-offset. Then, only ZonedTime can do the unixTime operation. LocalTime,
-simple and zoneless, cannot.  This goes for modified julian date too.
-
-* add formatting
-* add parsing
-* add zoned time to represent specific timestamps, including utc time
-
-future
-
-TimeZone
-  new : String -> TimeZone
-  list : [TimeZone]
-properties
-  name : String
-  region : String
-  nominalOffset : Number
-  decodeUnixTime : ZonedTime
-
-LocalTime
-  asZone : LocalTime -> TimeZone -> ZonedTime
-  asUTC : LocalTime -> ZonedTime
-  (no unixTime)
-  (no mjd)
-
-ZonedTime
-  new : LocalTime -> TimeZone -> ZonedTime
-properties
-  timeZone : TimeZone
-  localTime : LocalTime
-  offset : Number
-  mjd : Number
-operations
-  unixTime : ZonedTime -> Number
-  inZone : ZonedTime -> TimeZone -> ZonedTime
-  toUTC : ZonedTime -> ZonedTime
-  diff : ZonedTime -> ZonedTime -> Number
-  ... and all the other operations of LocalTime
-  ... diff, lt, eq etc compare their UTC local times
-  
-
-Commands
-  getCurrentZonedTime :: ZonedTime
+Future
+  * add formatting
+  * add parsing
+  * add the easter algorithm

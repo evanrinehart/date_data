@@ -12,13 +12,45 @@ var DateData = {};
   var month_origin; // arbitrary month
   var time_origin;  // arbitrary time
 
+  var timezone_by_name = {};
+  var timezones_by_region = {};
+  var timezones = [];
+
   var UnixEpoch;    // new Day(1970,1,1).atTime(0,0,0)
   var JulianEpoch;  // new Day(-4713,11,24).atTime(12,0,0) i.e. 4714 BC
+
+  var UTC; //TimeZone
 
   var Month;
   var Weekday;
   var Day;
   var LocalTime;
+  var TimeZone;
+  var ZonedTime;
+  var UTCTime;
+  var Year;
+
+
+  function build_timezones(raw_tzdata){
+    var i;
+    var L=raw_tzdata.length;
+    var row;
+    for(i=0; i<L; i++){
+      row = raw_tzdata[i];
+      tz = new TimeZone(row[0], row[1], row[2], row[3], row[4], row[5]);
+      timezones.push(tz);
+      timezone_by_name[tz.name] = tz;
+      if(timezones_by_region[tz.region] === undefined){
+        timezones_by_region[tz.region] = [];
+      }
+      if(tz.region !== null){
+        timezones_by_region[tz.region].push(tz);
+      }
+    }
+
+    UTC = timezone_by_name['UTC'];
+    if(UTC===undefined) throw new Error("UTC timezone not found");
+  }
 
 
   function mod(a, b){
@@ -443,10 +475,6 @@ var DateData = {};
       return day.atTime(this.hour, this.minute, this.second);
     }
 
-    this.unixTime = function(){
-      return this.diff(UnixEpoch);
-    }
-
     this.diff = function(arg){
       var d1 = diff_origin(this);
       var d2 = diff_origin(arg);
@@ -461,12 +489,19 @@ var DateData = {};
       ].join(':');
     };
 
+    this.asUTC = function(){
+      return new ZonedTime(this, UTC, 0);
+    };
+
+    this.asZone = function(zone){
+      if(zone===undefined) throw new Error("bad timezone");
+      var offset = zone.localToOffset(this); /* could throw an error */
+      var utcTime = this.addMinutes(-offset);
+      return new ZonedTime(utcTime, zone, offset);
+    };
+
     this.mjd = this.day.mjd + this.seconds_past_midnight/86400;
 
-  };
-
-  LocalTime.fromUnixTime = function(timestamp){
-    return UnixEpoch.addSeconds(timestamp);
   };
 
   LocalTime.decode = function(str){
@@ -482,6 +517,121 @@ var DateData = {};
 
   /* end LocalTime */
 
+
+  TimeZone = function(name, region, tzname, nominalOffset, defaultOffset, transitions){
+    this.name = name;
+    this.region = region;
+    this.tzName = tzname;
+    this.nominalOffset = nominalOffset;
+
+    this.utcToOffset = function(utc){
+      var localTime = utc;
+      /* magic (use transitions) */
+      var offset = 0; //FIXME
+      return offset;
+    };
+
+    this.localToOffset = function(local){
+      throw new Error([
+        "invalid local time for this timezone: ",
+        local.encode(),
+        ' ',
+        this.name
+      ].join(''));
+      return 0; //FIXME
+    };
+
+    this.tryLocalToOffset = function(local){
+      return null;//FIXME
+    };
+
+    this.decode = function(str){
+      var time = LocalTime.decode(str);
+      return time.asZone(this);
+    };
+
+    this.decodeUnixTime = function(timestamp){
+      var utcTime = UnixEpoch.addSeconds(timestamp);
+      var offset = this.utcToOffset(utcTime);
+      return new ZonedTime(utcTime, this, offset);
+    };
+
+  };
+
+  TimeZone.byName = function(name){
+    return timezone_by_name[name];
+  };
+
+  TimeZone.byRegion = function(region){
+    return timezones_by_region(region);
+  };
+
+  /* end TimeZone */
+
+
+  ZonedTime = function(utcTime, timeZone, offset){
+    if(timeZone===undefined) throw new Error("bad timezone");
+    this.localTime = utcTime.addMinutes(offset);
+    this.timeZone = timeZone;
+
+    this.inZone = function(zone){
+      var new_offset = zone.utcToOffset(utcTime);
+      return new ZonedTime(utcTime, zone, new_offset);
+    };
+
+    this.toUTC = function(){
+      return new ZonedTime(utcTime, UTC, 0);
+    };
+
+    this.unixTime = function(){
+      return utcTime.diff(UnixEpoch);
+    };
+
+    this.compare = function(arg){
+      return utcTime.compare(arg.toUTC().localTime);
+    };
+
+    this.diff = function(arg){
+      return utcTime.diff(arg.toUTC().localTime);
+    };
+
+  };
+
+  ZonedTime.prototype = LocalTime;
+
+  /* end ZonedTime */
+
+
+  function easterAlgorithm(year){
+    return Apocalypse38.localTime.day;
+  }
+
+
+  Year = {
+    isLeap: is_leap,
+    easter: easterAlgorithm
+  }
+
+
+
+
+
+  /* build timezones from data generate from tz data files */
+
+/*
+raw tz data consists of rows of
+name, region, tzinfoname, nominal offset, default offset
+and list of transition pairs (utc time of transition, new offset)
+
+put data generate from tz database files here
+*/
+  var raw_tzdata = [
+    ['UTC', null, 'Etc/UTC', 0, 0, []],
+    ['US/Central', 'US', 'America/Chicago', -6, -6, []]
+  ];
+
+  build_timezones(raw_tzdata);  
+
   time_origin = { // arbitrary dummy bootstrap time for diffs
     day: new Day(1984, 12, 5),
     seconds_past_midnight: 0
@@ -489,13 +639,11 @@ var DateData = {};
   month_origin = new Month(1890, 1); // arbitrary value
 
   /* 4714 BC is -4713 in proleptic year numbers */
-  JulianEpoch = new Day(-4713, 11, 24).atTime(12, 0, 0);
-  UnixEpoch = new Day(1970, 1, 1).atMidnight();
+  JulianEpoch = new Day(-4713, 11, 24).atTime(12, 0, 0).asUTC();
+  UnixEpoch = new Day(1970, 1, 1).atMidnight().asUTC();
 
   /* corresponding to unix time 2^31, not minus 1 */
-  Apocalypse38 = new Day(2038,1,19).atTime(3,14,8);
-
-
+  Apocalypse38 = new Day(2038,1,19).atTime(3,14,8).asUTC();
 
   /* exported */
   DateData = {
@@ -503,6 +651,9 @@ var DateData = {};
     Day: Day,
     Weekday: Weekday,
     LocalTime: LocalTime,
+    TimeZone: TimeZone,
+    ZonedTime: ZonedTime,
+    Year: Year,
 
     Sunday: new Weekday(0),
     Monday: new Weekday(1),
@@ -533,6 +684,7 @@ var DateData = {};
     }
   };
 
+
 })();
 
 
@@ -540,4 +692,7 @@ Day = DateData.Day;
 Month = DateData.Month;
 LocalTime = DateData.LocalTime;
 Weekday = DateData.Weekday;
-
+TimeZone = DateData.TimeZone;
+ZonedTime = DateData.ZonedTime;
+UTCTime = DateData.UTCTime;
+Year = DateData.Year;
