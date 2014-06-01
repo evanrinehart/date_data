@@ -165,7 +165,7 @@ represents UTC. There is currently no way for it to stop you from
 accidentally using it on a civil time that has some offset from UTC. A good
 way out of this is to introduce a "ZonedTime" which carries a time zone
 series tag so it can know how to get to UTC. This tag is not an offset, but
-an index into the "olsen files" which, when combined with the time, give an
+an index into the "olson files" which, when combined with the time, give an
 offset. Then, only ZonedTime can do the unixTime operation. LocalTime,
 simple and zoneless, cannot.  This goes for modified julian date too.
 
@@ -191,6 +191,7 @@ LocalTime
   (no mjd)
 
 ZonedTime
+  new : LocalTime -> TimeZone -> ZonedTime
 properties
   timeZone : TimeZone
   localTime : LocalTime
